@@ -11,16 +11,12 @@
 module S3sync
 
   # always look "here" for include files (thanks aktxyz)
-  $LOAD_PATH << File.join(File.expand_path(File.dirname(__FILE__)), "../lib/s3sync/")
+#  $LOAD_PATH << File.join(File.expand_path(File.dirname(__FILE__)), "../lib/s3sync/")
+  $LOAD_PATH << File.join(File.expand_path(File.dirname(__FILE__)), "../lib/")
 
-  require 's3try'
-  $S3CMD_VERSION = '1.3.0'
-
+  require 's3sync'
   require 'getoptlong'
 
-  # after other mods, so we don't overwrite yaml vals with defaults
-  require 's3config'
-  include S3Config
 
   def S3sync.s3cmdMain
     # ---------- OPTIONS PROCESSING ---------- #
@@ -40,7 +36,7 @@ module S3sync
       $stderr.puts message if message
       name = $0.split('/').last
       $stderr.puts <<"ENDUSAGE"
-#{name} [options] <command> [arg(s)]\t\tversion #{$S3CMD_VERSION}
+#{name} [options] <command> [arg(s)]\t\tversion #{S3sync::VERSION}
   --help    -h        --verbose     -v     --dryrun    -n
   --ssl     -s        --debug       -d     --progress
   --expires-in=( <# of seconds> | [#d|#h|#m|#s] )
@@ -292,30 +288,8 @@ ENDUSAGE
     end
 
   end #main
-  def S3sync.s3cmdList(bucket, path, max=nil, delim=nil, marker=nil, headers={})
-    debug(max)
-    options = Hash.new
-    options['prefix'] = path # start at the right depth
-    options['max-keys'] = max ? max.to_s : 100
-    options['delimiter'] = delim if delim
-    options['marker'] = marker if marker
-    S3try(:list_bucket, bucket, options, headers)
-  end
 
-  # turn an array into a hash of pairs
-  def S3sync.hashPairs(ar)
-    ret = Hash.new
-    ar.each do |item|
-      name = (/^(.*?):/.match(item))[1]
-      item = (/^.*?:(.*)$/.match(item))[1]
-      ret[name] = item
-    end if ar
-    ret
-  end
 end #module
 
-def debug(str)
-  $stderr.puts str if $S3syncOptions['--debug']
-end
 
 S3sync::s3cmdMain #go!

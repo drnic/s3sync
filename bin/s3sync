@@ -14,18 +14,15 @@ module S3sync
   $S3SYNC_VERSION = '1.3.0'
 
   # always look "here" for include files (thanks aktxyz)
-  $LOAD_PATH << File.join(File.expand_path(File.dirname(__FILE__)), "../lib/s3sync/")
+  $LOAD_PATH << File.join(File.expand_path(File.dirname(__FILE__)), "../lib/")
 
   require 'getoptlong'
   #require 'generator' # http://www.ruby-doc.org/stdlib/libdoc/generator/rdoc/classes/Generator.html
-  require 'thread_generator' # memory doesn't leak with this one, at least nothing near as bad
+  require 's3sync/thread_generator' # memory doesn't leak with this one, at least nothing near as bad
   require 'md5'
   require 'tempfile'
-  require 's3try'
 
-  # after other mods, so we don't overwrite yaml vals with defaults
-  require 's3config'
-  include S3Config
+  require 's3sync'
 
   $S3syncDirString = '{E40327BF-517A-46e8-A6C3-AF51BC263F59}'
   $S3syncDirTag = 'd66759af42f282e1ba19144df2d405d0'

@@ -15,8 +15,8 @@
 # with respect to your use of this software code. 
 # (c) 2007 s3sync.net
 #
-require 'S3'
-require 'HTTPStreaming'
+require 's3sync/S3'
+require 's3sync/HTTPStreaming'
 
 # The purpose of this file is to overlay the S3 library from AWS
 # to add some functionality
@@ -56,8 +56,8 @@ module S3
          return http
       end
 
-		# add support for streaming the response body to an IO stream
-		alias __make_request__ make_request
+      # add support for streaming the response body to an IO stream
+      alias __make_request__ make_request
       def make_request(method, bucket='', key='', path_args={}, headers={}, data='', metadata={}, streamOut=nil)
          # build the path based on the calling format
          path = ''
@@ -67,15 +67,15 @@ module S3
          # add the slash after the bucket regardless
          # the key will be appended if it is non-empty
          path << "/#{key}"
-   
+
          # build the path_argument string
          # add the ? in all cases since 
          # signature and credentials follow path args
          path << '?'
          path << S3.path_args_hash_to_string(path_args) 
-         
+
          req = method_to_request_class(method).new("#{path}")
-   
+
          set_headers(req, headers)
          set_headers(req, metadata, METADATA_PREFIX)
          set_headers(req, {'Connection' => 'keep-alive', 'Keep-Alive' => '300'})

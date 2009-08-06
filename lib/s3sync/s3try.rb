@@ -23,15 +23,15 @@ module S3sync
   $S3SYNC_NATIVE_CHARSET = (ENV["S3SYNC_NATIVE_CHARSET"] or "ISO-8859-1")
   $AWS_CALLING_FORMAT = (ENV["AWS_CALLING_FORMAT"] or "REGULAR")
 
-  require 'S3'
+  require 's3sync/S3'
+  require 's3sync/HTTPStreaming'
+  require 's3sync/S3encoder'
 
-  require 'HTTPStreaming'
-  require 'S3encoder'
   CGI::exemptSlashesInEscape = true
   CGI::usePercent20InEscape = true
   CGI::useUTF8InEscape = true
   CGI::nativeCharacterEncoding = $S3SYNC_NATIVE_CHARSET
-  require 'S3_s3sync_mod'
+  require 's3sync/S3_s3sync_mod'
 
 
   $S3syncRetriesLeft = $S3SYNC_RETRIES.to_i
