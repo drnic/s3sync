@@ -51,6 +51,8 @@ Commands:
 #{name}  deleteall  <bucket>[:prefix]  [headers]
 #{name}  get|put  <bucket>:key  <file>  [headers]
 #{name}  copy  <bucket>:key <bucket>:key  [headers]
+#{name}  copyall  <bucket>:key <bucket>:key  [headers]
+#{name}  headers  <bucket>:key [headers]
 ENDUSAGE
       exit
     end #usage
@@ -242,6 +244,49 @@ ENDUSAGE
       $stderr.puts "copy #{bucket}:#{path} to #{dest_bucket}/#{file} #{headers.inspect if headers}" if $S3syncOptions['--verbose']
       S3try(:put, dest_bucket, file, nil, headers) unless $S3syncOptions['--dryrun']
 
+    when "copyall"
+      s3cmdUsage("Need a bucket") if bucket == ''
+      s3cmdUsage("Need a path") if path == ''
+
+      file = file.dup # modifiable
+      file += ':' unless file.match(':')
+      dest_bucket = (/^(.*?):/.match(file))[1]
+      dest_key = file.replace((/:(.*)$/.match(file))[1])
+
+      src_path = path
+
+      headers = hashPairs(ARGV[2...ARGV.length])
+
+      $stderr.puts "copy #{bucket}:#{path} to #{dest_bucket}:#{dest_key} #{headers.inspect if headers}" if $S3syncOptions['--verbose']
+      more = true
+      marker = nil
+      while more do
+        res = s3cmdList(bucket, path, nil, nil, marker)
+        res.entries.each do |item|
+          # the s3 commands (with my modified UTF-8 conversion) expect native char encoding input
+          path = Iconv.iconv($S3SYNC_NATIVE_CHARSET, "UTF-8", item.key).join
+
+          file = path.gsub(src_path, dest_key)
+
+          headers = hashPairs(ARGV[3...ARGV.length])
+          if headers.length > 0
+            headers["x-amz-metadata-directive"] = "REPLACE"
+          else
+            headers["x-amz-metadata-directive"] = "COPY"
+          end
+          headers["x-amz-copy-source"] = "/#{bucket}/#{URI.escape(path)}"
+
+          $stderr.puts "copy #{bucket}:#{path} to #{dest_bucket}/#{file} #{headers.inspect if headers}" if $S3syncOptions['--verbose']
+          S3try(:put, dest_bucket, file, nil, headers) unless $S3syncOptions['--dryrun']
+
+        end
+
+        more = res.properties.is_truncated
+        marker = (res.properties.next_marker)? res.properties.next_marker : ((res.entries.length > 0) ? res.entries.last.key : nil)
+        # get this into local charset; when we pass it to s3 that is what's expected
+        marker = Iconv.iconv($S3SYNC_NATIVE_CHARSET, "UTF-8", marker).join if marker
+      end
+
     when "headers"
       s3cmdUsage("Need a bucket") if bucket == ''
       s3cmdUsage("Need a path") if path == ''
@@ -254,8 +299,6 @@ ENDUSAGE
       while more do
         res = s3cmdList(bucket, path, nil, nil, marker)
         res.entries.each do |item|
-          puts item.inspect
-
           # the s3 commands (with my modified UTF-8 conversion) expect native char encoding input
           key = Iconv.iconv($S3SYNC_NATIVE_CHARSET, "UTF-8", item.key).join
 
